@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items.iml" filepath="$PROJECT_DIR$/.idea/modules/items.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-api.iml" filepath="$PROJECT_DIR$/.idea/modules/items-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-api-build.iml" filepath="$PROJECT_DIR$/.idea/modules/items-api-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-build.iml" filepath="$PROJECT_DIR$/.idea/modules/items-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-impl.iml" filepath="$PROJECT_DIR$/.idea/modules/items-impl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-impl-build.iml" filepath="$PROJECT_DIR$/.idea/modules/items-impl-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-stream-api-build.iml" filepath="$PROJECT_DIR$/.idea/modules/items-stream-api-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/items-stream-impl-build.iml" filepath="$PROJECT_DIR$/.idea/modules/items-stream-impl-build.iml" />
+    </modules>
+  </component>
+</project>

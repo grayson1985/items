@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true">
+        <sourceOutputDir name="target/scala-2.12/src_managed/main" />
+        <sourceTestOutputDir name="target/src_managed/test" />
+        <outputRelativeToContentRoot value="true" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="items-impl" target="1.8" />
+      <module name="items-stream-impl" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

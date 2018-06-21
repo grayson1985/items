@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaSbtSettings">
+    <option name="customVMEnabled" value="true" />
+    <option name="customVMPath" value="/Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home" />
+    <option name="linkedExternalProjectsSettings">
+      <SbtProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/items-api" />
+            <option value="$PROJECT_DIR$/items-api/project" />
+            <option value="$PROJECT_DIR$/items-impl" />
+            <option value="$PROJECT_DIR$/items-impl/project" />
+            <option value="$PROJECT_DIR$/items-stream-api" />
+            <option value="$PROJECT_DIR$/items-stream-api/project" />
+            <option value="$PROJECT_DIR$/items-stream-impl" />
+            <option value="$PROJECT_DIR$/items-stream-impl/project" />
+            <option value="$PROJECT_DIR$/project" />
+          </set>
+        </option>
+        <option name="sbtVersion" value="1.1.5" />
+      </SbtProjectSettings>
+    </option>
+  </component>
+</project>
