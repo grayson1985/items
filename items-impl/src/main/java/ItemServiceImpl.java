@@ -1,18 +1,21 @@
 import akka.Done;
 import akka.NotUsed;
-import akka.persistence.cassandra.session.javadsl.CassandraSession;
+import akka.japi.Pair;
+import com.balthus.item.*;
+import com.lightbend.lagom.javadsl.api.broker.Topic;
+import com.lightbend.lagom.javadsl.broker.TopicProducer;
+import com.lightbend.lagom.javadsl.persistence.*;
+import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraSession;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
-import com.lightbend.lagom.javadsl.persistence.ReadSide;
 
 import javax.inject.Inject;
-import com.balthus.item.Item;
-import com.balthus.item.ItemService;
-import commands.ItemCommand;
-import events.ItemEventProcessor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 
@@ -20,61 +23,81 @@ public class ItemServiceImpl implements ItemService {
   private final PersistentEntityRegistry persistentEntityRegistry;
   private final CassandraSession cassandraSession;
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ItemServiceImpl.class);
+
+
   @Inject
-  public ItemServiceImpl(final PersistentEntityRegistry registry, ReadSide readSide, CassandraSession session) {
+  public ItemServiceImpl(CassandraSession session, PersistentEntityRegistry registry, ReadSide readSide) {
     this.persistentEntityRegistry = registry;
     this.cassandraSession = session;
-
-
-    persistentEntityRegistry.register(ItemEntity.class);
-    readSide.register(ItemEventProcessor.class);
+    persistentEntityRegistry.register(MenuItemEntity.class);
+    readSide.register(ItemRepository.class);
   }
 
   @Override
-  public ServiceCall<NotUsed, Optional<Item>> getItem(String id) {
-    return request -> {
-      String stmt = "SELECT * FROM Items WHERE id=?";
-      CompletionStage<Optional<Item>> itemFut =
-        cassandraSession.selectAll(stmt, id).thenApply(
-          rows -> rows.stream().map(row ->
-            Item.builder()
-              .id(row.getString("id"))
-              .name(row.getString("name"))
-              .description(row.getString("description"))
-              .price(row.getString("price"))
-              .build()
-          ).findFirst()
-        );
-      return itemFut;
+  public ServiceCall<NotUsed, Optional<Item>> getItem(UUID id) {
+    return request -> itemEntityRef(id).ask(ItemCommand.GetItem.INSTANCE);
+  }
+
+  @Override
+  public ServiceCall<ItemData, Item> createItem() {
+    return data -> {
+      UUID id = UUID.randomUUID();
+      Item item = new Item(id, data);
+      ItemCommand.CreateItem command = new ItemCommand.CreateItem(item);
+      return itemEntityRef(id).ask(command).thenApply(done -> item);
     };
   }
 
   @Override
-  public ServiceCall<Item, Done> createItem() {
-    return item -> {
-      PersistentEntityRef<ItemCommand> ref = itemEntityRef(item);
-      return ref.ask(ItemCommand.CreateItem.builder().item(item).build());
+  public ServiceCall<ItemData, Item> updateItem(UUID id) {
+    return itemData -> {
+      ItemCommand.UpdateItem command = new ItemCommand.UpdateItem(id, itemData);
+      return itemEntityRef(id).ask(command);
     };
   }
 
   @Override
-  public ServiceCall<Item, Done> updateItem(String id) {
-    return item -> {
-      PersistentEntityRef<ItemCommand> ref = itemEntityRef(item);
-      return ref.ask(ItemCommand.UpdateItem.builder().item(item).build());
-    };
+  public Topic<ItemEvent> itemsTopic() {
+    return TopicProducer.taggedStreamWithOffset(MenuItemEvent.TAG.allTags(), (tag, offset) ->
+      persistentEntityRegistry.eventStream(tag, offset).mapAsync(1, eventAndOffset ->
+        convertMenuItem(eventAndOffset.first()).thenApply(event ->
+          Pair.create(event, eventAndOffset.second())
+        )
+      ));
   }
 
   @Override
-  public ServiceCall<NotUsed, Done> deleteItem(String id) {
-    return request -> {
-      Item item = Item.builder().id(id).build();
-      PersistentEntityRef<ItemCommand> ref = itemEntityRef(item);
-      return ref.ask(ItemCommand.DeleteItem.builder().item(item).build());
-    };
+  public ServiceCall<NotUsed, Item> deleteItem(UUID id) {
+    ItemCommand.DeleteItem deleteItem = new ItemCommand.DeleteItem(id, ItemStatus.INACTIVE);
+    return request -> itemEntityRef(id).ask(deleteItem);
   }
 
-  private PersistentEntityRef<ItemCommand> itemEntityRef(Item item) {
-    return persistentEntityRegistry.refFor(ItemEntity.class, item.getId());
+  private CompletionStage<ItemEvent> convertMenuItem(MenuItemEvent event) {
+    if (event instanceof MenuItemEvent.ItemUpdated) {
+      MenuItemEvent.ItemUpdated e = (MenuItemEvent.ItemUpdated) event;
+      return CompletableFuture.completedFuture(
+        new ItemEvent.ItemUpdated(
+          e.getItemId(),
+          e.getData(),
+          e.getStatus())
+      );
+    } else if (event instanceof MenuItemEvent.ItemCreated) {
+      MenuItemEvent.ItemCreated e = (MenuItemEvent.ItemCreated) event;
+      return CompletableFuture.completedFuture(
+        new ItemEvent.ItemCreated(e.getItemId(), e.getItem().getData(), e.getItem().getStatus())
+      );
+    } else if (event instanceof MenuItemEvent.ItemDeleted) {
+      MenuItemEvent.ItemDeleted e = (MenuItemEvent.ItemDeleted) event;
+      return CompletableFuture.completedFuture(
+        new ItemEvent.ItemDeactivated(e.getItemId(), e.getItemStatus())
+      );
+    } else {
+      throw new IllegalArgumentException("ItemServiceImpl: No matching MenuItemEvent found.");
+    }
+  }
+
+  private PersistentEntityRef<ItemCommand> itemEntityRef(UUID id) {
+    return persistentEntityRegistry.refFor(MenuItemEntity.class, id.toString());
   }
 }

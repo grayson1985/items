@@ -2,15 +2,13 @@ package com.balthus.item;
 
 import akka.Done;
 import akka.NotUsed;
-import com.lightbend.lagom.javadsl.api.Descriptor;
-import com.lightbend.lagom.javadsl.api.Service;
-import com.lightbend.lagom.javadsl.api.ServiceCall;
-
-import java.util.Optional;
-
-import static com.lightbend.lagom.javadsl.api.Service.named;
-import static com.lightbend.lagom.javadsl.api.Service.restCall;
+import com.lightbend.lagom.javadsl.api.*;
+import com.lightbend.lagom.javadsl.api.broker.Topic;
+import static com.lightbend.lagom.javadsl.api.Service.*;
 import static com.lightbend.lagom.javadsl.api.transport.Method.*;
+import java.util.Optional;
+import java.util.UUID;
+
 
 /**
  * The items service interface.
@@ -19,14 +17,7 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.*;
  * consume the ItemsService.
  */
 public interface ItemService extends Service {
-  ServiceCall<NotUsed, Optional<Item>> getItem(String id);
-
-  ServiceCall<Item, Done> createItem();
-
-  ServiceCall<Item, Done> updateItem(String id);
-
-  ServiceCall<NotUsed, Done> deleteItem(String id);
-
+  String itemsTopic = "items";
   @Override
   default Descriptor descriptor() {
     return named("items").withCalls(
@@ -34,6 +25,14 @@ public interface ItemService extends Service {
       restCall(POST, "/api/item", this::createItem),
       restCall(PUT, "/api/item/:id", this::updateItem),
       restCall(DELETE, "/api/item/:id", this::deleteItem)
+
+    ).withTopics(
+      topic(itemsTopic, this::itemsTopic)
     ).withAutoAcl(true);
   }
+  ServiceCall<NotUsed, Optional<Item>> getItem(UUID id);
+  ServiceCall<ItemData, Item> createItem();
+  ServiceCall<ItemData, Item> updateItem(UUID id);
+  ServiceCall<NotUsed, Item> deleteItem(UUID id);
+  Topic<ItemEvent> itemsTopic();
 }
